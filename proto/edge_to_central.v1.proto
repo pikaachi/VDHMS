@@ -1,0 +1,55 @@
+// Edge to Central gRPC interface for VDDEHMS.
+// Implements ICD-INT-001.
+
+syntax = "proto3";
+
+package vddehms.edge_to_central.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// Bi-directional service exposed by the Central Server, consumed by Edge Nodes.
+service EdgeToCentral {
+  // Streaming telemetry from edge to central.
+  rpc StreamTelemetry(stream TelemetryBatch) returns (StreamTelemetryAck);
+
+  // Single-shot alert publication. Central acknowledges receipt.
+  rpc RaiseAlert(AlertEvent) returns (AlertAck);
+}
+
+message TelemetryBatch {
+  string edge_node_id = 1;
+  repeated TelemetrySample samples = 2;
+}
+
+message TelemetrySample {
+  string equipment_id = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  string metric = 3;
+  double value = 4;
+}
+
+message StreamTelemetryAck {
+  uint64 accepted = 1;
+  uint64 rejected = 2;
+}
+
+message AlertEvent {
+  enum Severity {
+    SEVERITY_UNSPECIFIED = 0;
+    TIER_1_INFORMATIONAL = 1;
+    TIER_2_ACTIONABLE = 2;
+    TIER_3_CRITICAL = 3;
+  }
+
+  string alert_id = 1;
+  string equipment_id = 2;
+  google.protobuf.Timestamp detected_at = 3;
+  Severity severity = 4;
+  string summary = 5;
+  map<string, string> context = 6;
+}
+
+message AlertAck {
+  string alert_id = 1;
+  bool accepted = 2;
+}
